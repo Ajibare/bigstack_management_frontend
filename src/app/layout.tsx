@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={geist.variable}>
-      <body className="min-h-screen overflow-hidden bg-gray-50 font-sans antialiased">
+      <body className="min-h-screen  bg-gray-50 font-sans antialiased">
         <SplashScreen />
         <div className="flex min-h-screen w-full overflow-hidden">
           <SidebarProvider>
