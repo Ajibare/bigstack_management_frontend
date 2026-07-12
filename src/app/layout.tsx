@@ -11,25 +11,30 @@ const geist = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'BigStack Management',
   description: 'Student & Finance Management System',
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={geist.variable}>
-      <body className="flex min-h-screen bg-gray-50 font-sans antialiased">
+      <body className="min-h-screen overflow-hidden bg-gray-50 font-sans antialiased">
         <SplashScreen />
-        <SidebarProvider>
-          {/* Sidebar */}
-          <Sidebar />
+        <div className="flex min-h-screen w-full overflow-hidden">
+          <SidebarProvider>
+            <Sidebar />
 
-          {/* Main content area */}
-          <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-            <TopBar />
-            <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-              {children}
-            </main>
-          </div>
-        </SidebarProvider>
+            <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
+              <TopBar />
+              <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+                {children}
+              </main>
+            </div>
+          </SidebarProvider>
+        </div>
       </body>
     </html>
   );
