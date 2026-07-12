@@ -7,9 +7,12 @@ import DeleteConfirm from '@/components/DeleteConfirm';
 import ActionMenu from '@/components/ActionMenu';
 import Spinner from '@/components/Spinner';
 import { ToastContainer, useToast } from '@/components/Toast';
+import Pagination, { paginate } from '@/components/Pagination';
 import axios from 'axios';
 
 const empty: Course = { name: '', description: '', price: 0, duration: '' };
+
+const PER_PAGE = 10;
 
 const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500';
 const labelCls = 'block text-sm font-medium text-gray-700 mb-1';
@@ -23,6 +26,7 @@ export default function CoursesPage() {
   const [form, setForm]                 = useState<Course>(empty);
   const [deleteTarget, setDeleteTarget] = useState<Course | null>(null);
   const [saving, setSaving]             = useState(false);
+  const [page, setPage]                 = useState(1);
   const { toasts, remove, success, error } = useToast();
 
   const load = () => {
@@ -40,8 +44,8 @@ export default function CoursesPage() {
   const save = async () => {
     setSaving(true);
     try {
-      if (editing?.id) {
-        await api.put(`/courses/${editing.id}`, form);
+      if (editing?._id) {
+        await api.put(`/courses/${editing._id}`, form);
         success('Course updated successfully.');
       } else {
         await api.post('/courses', form);
@@ -55,9 +59,9 @@ export default function CoursesPage() {
   };
 
   const doDelete = async () => {
-    if (!deleteTarget?.id) return;
+    if (!deleteTarget?._id) return;
     try {
-      await api.delete(`/courses/${deleteTarget.id}`);
+      await api.delete(`/courses/${deleteTarget._id}`);
       success('Course deleted.'); setDeleteTarget(null); load();
     } catch { error('Failed to delete course.'); }
   };
@@ -90,8 +94,8 @@ export default function CoursesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {records.map((r, i) => (
-                <tr key={r.id} className="hover:bg-indigo-50/40 transition-colors row-animate bg-white"
+              {paginate(records, page, PER_PAGE).map((r, i) => (
+                <tr key={r._id} className="hover:bg-indigo-50/40 transition-colors row-animate bg-white"
                   style={{ animationDelay: `${i * 30}ms` }}>
                   <td className="px-4 py-3 text-gray-400">{i + 1}</td>
                   <td className="px-4 py-3 font-medium text-gray-900">{r.name}</td>
@@ -105,6 +109,9 @@ export default function CoursesPage() {
               ))}
             </tbody>
           </table>
+          <div className="px-4 pb-4">
+            <Pagination total={records.length} page={page} perPage={PER_PAGE} onPage={setPage} />
+          </div>
         </div>
       )}
 
@@ -132,8 +139,8 @@ export default function CoursesPage() {
             </div>
             <div>
               <label className={labelCls}>Course Price (₦)</label>
-              <input type="number" value={form.price ?? 0} onChange={e => setForm({ ...form, price: Number(e.target.value) })}
-                className={inputCls} min={0} />
+              <input type="number" value={form.price || ''} onChange={e => setForm({ ...form, price: Number(e.target.value) })}
+                className={inputCls} min={0} placeholder="0" />
             </div>
             <div>
               <label className={labelCls}>Duration</label>

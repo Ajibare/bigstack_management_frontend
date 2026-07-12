@@ -7,14 +7,18 @@ import DeleteConfirm from '@/components/DeleteConfirm';
 import ActionMenu from '@/components/ActionMenu';
 import Spinner from '@/components/Spinner';
 import { ToastContainer, useToast } from '@/components/Toast';
+import Pagination, { paginate } from '@/components/Pagination';
 import axios from 'axios';
 
 const emptyForm = {
   name: '', university: '', department: '', level: '',
   feeToPay: 0, amountPaid: 0, balance: 0,
   date: new Date().toISOString().slice(0, 10),
+  completed: false, certificateIssued: false,
 };
 type FormData = typeof emptyForm;
+
+const PER_PAGE = 10;
 
 const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500';
 const labelCls = 'block text-sm font-medium text-gray-700 mb-1';
@@ -28,6 +32,7 @@ export default function ItStudentsPage() {
   const [form, setForm]                 = useState<FormData>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<ItStudent | null>(null);
   const [saving, setSaving]             = useState(false);
+  const [page, setPage]                 = useState(1);
   const { toasts, remove, success, error } = useToast();
 
   const load = () => {
@@ -42,16 +47,20 @@ export default function ItStudentsPage() {
   const openAdd  = () => { setEditing(null); setForm(emptyForm); setShowForm(true); };
   const openEdit = (r: ItStudent) => {
     setEditing(r);
-    setForm({ name: r.name, university: r.university, department: r.department,
-      level: r.level, feeToPay: r.feeToPay, amountPaid: r.amountPaid, balance: r.balance, date: r.date });
+    setForm({ 
+      name: r.name, university: r.university, department: r.department,
+      level: r.level, feeToPay: r.feeToPay, amountPaid: r.amountPaid, 
+      balance: r.balance, date: r.date,
+      completed: r.completed ?? false, certificateIssued: r.certificateIssued ?? false
+    });
     setShowForm(true);
   };
 
   const save = async () => {
     setSaving(true);
     try {
-      if (editing?.id) {
-        await api.put(`/it-students/${editing.id}`, form);
+      if (editing?._id) {
+        await api.put(`/it-students/${editing._id}`, form);
         success('IT Student updated successfully.');
       } else {
         await api.post('/it-students', form);
@@ -65,14 +74,14 @@ export default function ItStudentsPage() {
   };
 
   const doDelete = async () => {
-    if (!deleteTarget?.id) return;
+    if (!deleteTarget?._id) return;
     try {
-      await api.delete(`/it-students/${deleteTarget.id}`);
+      await api.delete(`/it-students/${deleteTarget._id}`);
       success('IT Student deleted.'); setDeleteTarget(null); load();
     } catch { error('Failed to delete.'); }
   };
 
-  const set = (k: keyof FormData, v: string | number) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k: keyof FormData, v: string | number | boolean) => setForm(f => ({ ...f, [k]: v }));
 
   return (
     <div className="bg-white min-h-full">
@@ -96,14 +105,14 @@ export default function ItStudentsPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
               <tr>
-                {['Student ID','Name','University','Department','Level','Fee','Paid','Balance','Date',''].map(h => (
+                {['Student ID','Name','University','Department','Level','Fee','Paid','Balance','Date','Completed','Certificate',''].map(h => (
                   <th key={h} className="px-4 py-3 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {records.map((r, i) => (
-                <tr key={r.id} className="hover:bg-purple-50/40 transition-colors row-animate bg-white"
+              {paginate(records, page, PER_PAGE).map((r, i) => (
+                <tr key={r._id} className="hover:bg-purple-50/40 transition-colors row-animate bg-white"
                   style={{ animationDelay: `${i * 30}ms` }}>
                   <td className="px-4 py-3">
                     <span className="bg-purple-100 text-purple-700 text-xs font-semibold px-2 py-0.5 rounded">{r.sn}</span>
@@ -117,12 +126,29 @@ export default function ItStudentsPage() {
                   <td className="px-4 py-3 text-red-600">₦{r.balance.toLocaleString()}</td>
                   <td className="px-4 py-3 text-gray-600">{r.date}</td>
                   <td className="px-4 py-3">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                      r.completed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {r.completed ? 'Yes' : 'No'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                      r.certificateIssued ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {r.certificateIssued ? 'Issued' : 'Pending'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
                     <ActionMenu onView={() => setViewing(r)} onEdit={() => openEdit(r)} onDelete={() => setDeleteTarget(r)} />
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <div className="px-4 pb-4">
+            <Pagination total={records.length} page={page} perPage={PER_PAGE} onPage={setPage} />
+          </div>
         </div>
       )}
 
@@ -137,6 +163,8 @@ export default function ItStudentsPage() {
           { label: 'Amount Paid', value: `₦${viewing.amountPaid.toLocaleString()}` },
           { label: 'Balance',     value: `₦${viewing.balance.toLocaleString()}` },
           { label: 'Date',        value: viewing.date },
+          { label: 'Completed',   value: viewing.completed ? 'Yes' : 'No' },
+          { label: 'Certificate', value: viewing.certificateIssued ? 'Issued' : 'Pending' },
         ]} />
       )}
 
@@ -169,18 +197,18 @@ export default function ItStudentsPage() {
             </div>
             <div>
               <label className={labelCls}>Fee to Pay (₦)</label>
-              <input type="number" value={form.feeToPay} onChange={e => set('feeToPay', Number(e.target.value))}
-                className={inputCls} min={0} />
+              <input type="number" value={form.feeToPay || ''} onChange={e => set('feeToPay', Number(e.target.value))}
+                className={inputCls} min={0} placeholder="0" />
             </div>
             <div>
               <label className={labelCls}>Amount Paid (₦)</label>
-              <input type="number" value={form.amountPaid} onChange={e => set('amountPaid', Number(e.target.value))}
-                className={inputCls} min={0} />
+              <input type="number" value={form.amountPaid || ''} onChange={e => set('amountPaid', Number(e.target.value))}
+                className={inputCls} min={0} placeholder="0" />
             </div>
             <div>
               <label className={labelCls}>Balance (₦)</label>
-              <input type="number" value={form.balance} onChange={e => set('balance', Number(e.target.value))}
-                className={inputCls} min={0} />
+              <input type="number" value={form.balance || ''} onChange={e => set('balance', Number(e.target.value))}
+                className={inputCls} min={0} placeholder="0" />
             </div>
           </div>
           <div className="flex gap-3 justify-end mt-6">

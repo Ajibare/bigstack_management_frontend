@@ -7,13 +7,17 @@ import DeleteConfirm from '@/components/DeleteConfirm';
 import ActionMenu from '@/components/ActionMenu';
 import Spinner from '@/components/Spinner';
 import { ToastContainer, useToast } from '@/components/Toast';
+import Pagination, { paginate } from '@/components/Pagination';
 import axios from 'axios';
 
 const emptyForm = {
   name: '', feeToPay: 0, amountPaid: 0, balance: 0,
   date: new Date().toISOString().slice(0, 10), age: '',
+  completed: false, certificateIssued: false,
 };
 type FormData = typeof emptyForm;
+
+const PER_PAGE = 10;
 
 const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500';
 const labelCls = 'block text-sm font-medium text-gray-700 mb-1';
@@ -27,6 +31,7 @@ export default function KcpPage() {
   const [form, setForm]                 = useState<FormData>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<KcpEntry | null>(null);
   const [saving, setSaving]             = useState(false);
+  const [page, setPage]                 = useState(1);
   const { toasts, remove, success, error } = useToast();
 
   const load = () => {
@@ -45,7 +50,11 @@ export default function KcpPage() {
   const openAdd  = () => { setEditing(null); setForm(emptyForm); setShowForm(true); };
   const openEdit = (r: KcpEntry) => {
     setEditing(r);
-    setForm({ name: r.name, feeToPay: r.feeToPay, amountPaid: r.amountPaid, balance: r.balance, date: r.date, age: r.age });
+    setForm({ 
+      name: r.name, feeToPay: r.feeToPay, amountPaid: r.amountPaid, 
+      balance: r.balance, date: r.date, age: r.age,
+      completed: r.completed ?? false, certificateIssued: r.certificateIssued ?? false
+    });
     setShowForm(true);
   };
 
@@ -74,7 +83,7 @@ export default function KcpPage() {
     } catch { error('Failed to delete.'); }
   };
 
-  const set = (k: keyof FormData, v: string | number) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k: keyof FormData, v: string | number | boolean) => setForm(f => ({ ...f, [k]: v }));
 
   return (
     <div className="bg-white min-h-full">
@@ -115,13 +124,13 @@ export default function KcpPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
               <tr>
-                {['ID','Name','Age','Fee Payment','Amount Paid','Balance','Date',''].map(h => (
+                {['ID','Name','Age','Fee Payment','Amount Paid','Balance','Date','Completed','Certificate',''].map(h => (
                   <th key={h} className="px-4 py-3 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {records.map((r, i) => (
+              {paginate(records, page, PER_PAGE).map((r, i) => (
                 <tr key={r._id} className="hover:bg-orange-50/40 transition-colors row-animate bg-white"
                   style={{ animationDelay: `${i * 30}ms` }}>
                   <td className="px-4 py-3">
@@ -134,12 +143,29 @@ export default function KcpPage() {
                   <td className="px-4 py-3 text-red-600">₦{r.balance.toLocaleString()}</td>
                   <td className="px-4 py-3 text-gray-600">{r.date}</td>
                   <td className="px-4 py-3">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                      r.completed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {r.completed ? 'Yes' : 'No'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                      r.certificateIssued ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {r.certificateIssued ? 'Issued' : 'Pending'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
                     <ActionMenu onView={() => setViewing(r)} onEdit={() => openEdit(r)} onDelete={() => setDeleteTarget(r)} />
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <div className="px-4 pb-4">
+            <Pagination total={records.length} page={page} perPage={PER_PAGE} onPage={setPage} />
+          </div>
         </div>
       )}
 
@@ -152,6 +178,8 @@ export default function KcpPage() {
           { label: 'Amount Paid', value: `₦${viewing.amountPaid.toLocaleString()}` },
           { label: 'Balance',     value: `₦${viewing.balance.toLocaleString()}` },
           { label: 'Date',        value: viewing.date },
+          { label: 'Completed',   value: viewing.completed ? 'Yes' : 'No' },
+          { label: 'Certificate', value: viewing.certificateIssued ? 'Issued' : 'Pending' },
         ]} />
       )}
 
@@ -174,15 +202,37 @@ export default function KcpPage() {
             </div>
             <div>
               <label className={labelCls}>Fee Payment (₦)</label>
-              <input type="number" value={form.feeToPay} onChange={e => set('feeToPay', Number(e.target.value))} className={inputCls} min={0} />
+              <input type="number" value={form.feeToPay || ''} onChange={e => set('feeToPay', Number(e.target.value))} className={inputCls} min={0} placeholder="0" />
             </div>
             <div>
               <label className={labelCls}>Amount Paid (₦)</label>
-              <input type="number" value={form.amountPaid} onChange={e => set('amountPaid', Number(e.target.value))} className={inputCls} min={0} />
+              <input type="number" value={form.amountPaid || ''} onChange={e => set('amountPaid', Number(e.target.value))} className={inputCls} min={0} placeholder="0" />
             </div>
             <div className="col-span-2">
               <label className={labelCls}>Balance (₦)</label>
-              <input type="number" value={form.balance} onChange={e => set('balance', Number(e.target.value))} className={inputCls} min={0} />
+              <input type="number" value={form.balance || ''} onChange={e => set('balance', Number(e.target.value))} className={inputCls} min={0} placeholder="0" />
+            </div>
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={form.completed}
+                  onChange={(e) => set('completed', e.target.checked)}
+                  className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                />
+                Course Completed
+              </label>
+            </div>
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={form.certificateIssued}
+                  onChange={(e) => set('certificateIssued', e.target.checked)}
+                  className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                />
+                Certificate Issued
+              </label>
             </div>
           </div>
           <div className="flex gap-3 justify-end mt-6">

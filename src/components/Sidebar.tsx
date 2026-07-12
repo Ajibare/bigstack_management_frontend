@@ -1,14 +1,15 @@
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   MdDashboard, MdSchool, MdComputer, MdWifi,
-  MdAccountBalance, MdChildCare, MdMenuBook, MdClose,
+  MdAccountBalance, MdChildCare, MdMenuBook, MdClose, MdPeople,
 } from 'react-icons/md';
 import { IconType } from 'react-icons';
 import { useSidebar } from './SidebarContext';
 import logo from './asset/logo.png';
+import { useState } from 'react';
 
 const links: { href: string; label: string; Icon: IconType }[] = [
   { href: '/',                  label: 'Dashboard',         Icon: MdDashboard      },
@@ -16,19 +17,36 @@ const links: { href: string; label: string; Icon: IconType }[] = [
   { href: '/it-students',       label: 'IT Students',       Icon: MdComputer       },
   { href: '/hub-subscriptions', label: 'Hub Subscriptions', Icon: MdWifi           },
   { href: '/finance',           label: 'Finance',           Icon: MdAccountBalance },
-  { href: '/kcp',               label: 'KCP',               Icon: MdChildCare      },
+  {href: '/kcp',               label: 'KCP',               Icon: MdChildCare      },
+  { href: '/staff',             label: 'Staff',             Icon: MdPeople         },
   { href: '/courses',           label: 'Courses',           Icon: MdMenuBook       },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { open, close } = useSidebar();
+  const [loadingHref, setLoadingHref] = useState<string | null>(null);
+
+  const handleNavigation = (href: string) => {
+    setLoadingHref(href);
+    router.push(href);
+    // Reset loading state after navigation (timeout as fallback)
+    setTimeout(() => setLoadingHref(null), 1000);
+  };
 
   return (
     <>
       {/* Mobile backdrop */}
       {open && (
         <div className="fixed inset-0 z-20 bg-black/50 lg:hidden" onClick={close} aria-hidden="true" />
+      )}
+
+      {/* Loading overlay for mobile */}
+      {loadingHref && (
+        <div className="fixed inset-0 z-50 bg-white/80 flex items-center justify-center lg:hidden">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900"></div>
+        </div>
       )}
 
       <aside className={`
@@ -61,15 +79,27 @@ export default function Sidebar() {
           {links.map(({ href, label, Icon }) => {
             const active = pathname === href;
             return (
-              <Link key={href} href={href} onClick={close}
-                className={`flex items-center gap-3 px-5 py-3 text-sm transition-colors ${
+              <button
+                key={href}
+                onClick={() => {
+                  handleNavigation(href);
+                  // Close sidebar on mobile only
+                  if (window.innerWidth < 1024) close();
+                }}
+                disabled={!!loadingHref}
+                className={`w-full flex items-center gap-3 px-5 py-3 text-sm transition-colors ${
                   active
                     ? 'bg-slate-700 text-white font-semibold border-r-4 border-blue-400'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`}>
-                <Icon size={18} className="shrink-0" />
+                } ${loadingHref ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {loadingHref === href ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white shrink-0"></div>
+                ) : (
+                  <Icon size={18} className="shrink-0" />
+                )}
                 <span className="truncate">{label}</span>
-              </Link>
+              </button>
             );
           })}
         </nav>

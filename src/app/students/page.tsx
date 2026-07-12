@@ -15,6 +15,7 @@ const PER_PAGE = 10;
 const emptyForm = {
   name: '', course: '', tutor: '', amountPaid: 0, balance: 0,
   feeToPay: 0, duration: '', date: new Date().toISOString().slice(0, 10),
+  completed: false, certificateIssued: false,
 };
 type FormData = typeof emptyForm;
 
@@ -47,16 +48,19 @@ export default function StudentsPage() {
   const openAdd  = () => { setEditing(null); setForm(emptyForm); setShowForm(true); };
   const openEdit = (r: Student) => {
     setEditing(r);
-    setForm({ name: r.name, course: r.course, tutor: r.tutor, amountPaid: r.amountPaid,
-      balance: r.balance, feeToPay: r.feeToPay, duration: r.duration, date: r.date });
+    setForm({ 
+      name: r.name, course: r.course, tutor: r.tutor, amountPaid: r.amountPaid,
+      balance: r.balance, feeToPay: r.feeToPay, duration: r.duration, date: r.date,
+      completed: r.completed ?? false, certificateIssued: r.certificateIssued ?? false
+    });
     setShowForm(true);
   };
 
   const save = async () => {
     setSaving(true);
     try {
-      if (editing?.id) {
-        await api.put(`/students/${editing.id}`, form);
+      if (editing?._id) {
+        await api.put(`/students/${editing._id}`, form);
         success('Student updated successfully.');
       } else {
         await api.post('/students', form);
@@ -73,16 +77,16 @@ export default function StudentsPage() {
   };
 
   const doDelete = async () => {
-    if (!deleteTarget?.id) return;
+    if (!deleteTarget?._id) return;
     try {
-      await api.delete(`/students/${deleteTarget.id}`);
+      await api.delete(`/students/${deleteTarget._id}`);
       success('Student deleted.');
       setDeleteTarget(null);
       load();
     } catch { error('Failed to delete student.'); }
   };
 
-  const set = (k: keyof FormData, v: string | number) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k: keyof FormData, v: string | number | boolean) => setForm(f => ({ ...f, [k]: v }));
 
   return (
     <div className="bg-white min-h-full">
@@ -108,14 +112,14 @@ export default function StudentsPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
               <tr>
-                {['Student ID','Name','Course','Tutor','Fee','Paid','Balance','Duration','Date',''].map(h => (
+                {['Student ID','Name','Course','Tutor','Fee','Paid','Balance','Duration','Date','Completed','Certificate',''].map(h => (
                   <th key={h} className="px-4 py-3 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {paginate(records, page, PER_PAGE).map((r, i) => (
-                <tr key={r.id} className="hover:bg-blue-50/40 transition-colors row-animate bg-white"
+                <tr key={r._id} className="hover:bg-blue-50/40 transition-colors row-animate bg-white"
                   style={{ animationDelay: `${i * 30}ms` }}>
                   <td className="px-4 py-3">
                     <span className="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded">{r.sn}</span>
@@ -128,6 +132,20 @@ export default function StudentsPage() {
                   <td className="px-4 py-3 text-red-600">₦{r.balance.toLocaleString()}</td>
                   <td className="px-4 py-3 text-gray-600">{r.duration}</td>
                   <td className="px-4 py-3 text-gray-600">{r.date}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                      r.completed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {r.completed ? 'Yes' : 'No'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                      r.certificateIssued ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {r.certificateIssued ? 'Issued' : 'Pending'}
+                    </span>
+                  </td>
                   <td className="px-4 py-3">
                     <ActionMenu
                       onView={() => setViewing(r)}
@@ -157,6 +175,8 @@ export default function StudentsPage() {
           { label: 'Balance',     value: `₦${viewing.balance.toLocaleString()}` },
           { label: 'Duration',    value: viewing.duration },
           { label: 'Date',        value: viewing.date },
+          { label: 'Completed',   value: viewing.completed ? 'Yes' : 'No' },
+          { label: 'Certificate', value: viewing.certificateIssued ? 'Issued' : 'Pending' },
         ]} />
       )}
 
@@ -175,7 +195,7 @@ export default function StudentsPage() {
                 ? <p className="text-xs text-red-500 mt-1">No courses found. Add courses first.</p>
                 : <select value={form.course} onChange={e => set('course', e.target.value)} className={inputCls}>
                     <option value="">— Select a course —</option>
-                    {courses.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    {courses.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
                   </select>
               }
             </div>
@@ -191,22 +211,44 @@ export default function StudentsPage() {
             </div>
             <div>
               <label className={labelCls}>Fee to Pay (₦)</label>
-              <input type="number" value={form.feeToPay} onChange={e => set('feeToPay', Number(e.target.value))}
-                className={inputCls} min={0} />
+              <input type="number" value={form.feeToPay || ''} onChange={e => set('feeToPay', Number(e.target.value))}
+                className={inputCls} min={0} placeholder="0" />
             </div>
             <div>
               <label className={labelCls}>Amount Paid (₦)</label>
-              <input type="number" value={form.amountPaid} onChange={e => set('amountPaid', Number(e.target.value))}
-                className={inputCls} min={0} />
+              <input type="number" value={form.amountPaid || ''} onChange={e => set('amountPaid', Number(e.target.value))}
+                className={inputCls} min={0} placeholder="0" />
             </div>
             <div>
               <label className={labelCls}>Balance (₦)</label>
-              <input type="number" value={form.balance} onChange={e => set('balance', Number(e.target.value))}
-                className={inputCls} min={0} />
+              <input type="number" value={form.balance || ''} onChange={e => set('balance', Number(e.target.value))}
+                className={inputCls} min={0} placeholder="0" />
             </div>
             <div>
               <label className={labelCls}>Date</label>
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className={inputCls} />
+            </div>
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={form.completed}
+                  onChange={(e) => set('completed', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                Course Completed
+              </label>
+            </div>
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={form.certificateIssued}
+                  onChange={(e) => set('certificateIssued', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                Certificate Issued
+              </label>
             </div>
           </div>
           <div className="flex gap-3 justify-end mt-6">

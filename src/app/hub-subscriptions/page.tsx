@@ -7,6 +7,7 @@ import DeleteConfirm from '@/components/DeleteConfirm';
 import ActionMenu from '@/components/ActionMenu';
 import Spinner from '@/components/Spinner';
 import { ToastContainer, useToast } from '@/components/Toast';
+import Pagination, { paginate } from '@/components/Pagination';
 import axios from 'axios';
 
 const emptyForm = {
@@ -14,6 +15,8 @@ const emptyForm = {
   date: new Date().toISOString().slice(0, 10),
 };
 type FormData = typeof emptyForm;
+
+const PER_PAGE = 10;
 
 const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500';
 const labelCls = 'block text-sm font-medium text-gray-700 mb-1';
@@ -27,6 +30,7 @@ export default function HubSubscriptionsPage() {
   const [form, setForm]                 = useState<FormData>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<HubSubscription | null>(null);
   const [saving, setSaving]             = useState(false);
+  const [page, setPage]                 = useState(1);
   const { toasts, remove, success, error } = useToast();
 
   const load = () => {
@@ -48,8 +52,8 @@ export default function HubSubscriptionsPage() {
   const save = async () => {
     setSaving(true);
     try {
-      if (editing?.id) {
-        await api.put(`/hub-subscriptions/${editing.id}`, form);
+      if (editing?._id) {
+        await api.put(`/hub-subscriptions/${editing._id}`, form);
         success('Subscription updated successfully.');
       } else {
         await api.post('/hub-subscriptions', form);
@@ -63,9 +67,9 @@ export default function HubSubscriptionsPage() {
   };
 
   const doDelete = async () => {
-    if (!deleteTarget?.id) return;
+    if (!deleteTarget?._id) return;
     try {
-      await api.delete(`/hub-subscriptions/${deleteTarget.id}`);
+      await api.delete(`/hub-subscriptions/${deleteTarget._id}`);
       success('Subscription deleted.'); setDeleteTarget(null); load();
     } catch { error('Failed to delete.'); }
   };
@@ -98,8 +102,8 @@ export default function HubSubscriptionsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {records.map((r, i) => (
-                <tr key={r.id} className="hover:bg-teal-50/40 transition-colors row-animate bg-white"
+              {paginate(records, page, PER_PAGE).map((r, i) => (
+                <tr key={r._id} className="hover:bg-teal-50/40 transition-colors row-animate bg-white"
                   style={{ animationDelay: `${i * 30}ms` }}>
                   <td className="px-4 py-3">
                     <span className="bg-teal-100 text-teal-700 text-xs font-semibold px-2 py-0.5 rounded">{r.sn}</span>
@@ -115,6 +119,9 @@ export default function HubSubscriptionsPage() {
               ))}
             </tbody>
           </table>
+          <div className="px-4 pb-4">
+            <Pagination total={records.length} page={page} perPage={PER_PAGE} onPage={setPage} />
+          </div>
         </div>
       )}
 
@@ -138,8 +145,8 @@ export default function HubSubscriptionsPage() {
             </div>
             <div>
               <label className={labelCls}>Amount Paid (₦)</label>
-              <input type="number" value={form.amountPaid} onChange={e => set('amountPaid', Number(e.target.value))}
-                className={inputCls} min={0} />
+              <input type="number" value={form.amountPaid || ''} onChange={e => set('amountPaid', Number(e.target.value))}
+                className={inputCls} min={0} placeholder="0" />
             </div>
             <div>
               <label className={labelCls}>Duration</label>

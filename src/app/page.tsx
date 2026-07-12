@@ -164,7 +164,7 @@ export default function DashboardPage() {
                   <card.Icon size={20} className="text-white" />
                 </div>
                 <p className="text-xs sm:text-sm font-medium opacity-80 mb-1">{card.label}</p>
-                <p className="text-2xl sm:text-3xl font-bold tracking-tight">{card.value}</p>
+                <p className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight break-words leading-tight">{card.value}</p>
               </div>
             </Link>
           ))}

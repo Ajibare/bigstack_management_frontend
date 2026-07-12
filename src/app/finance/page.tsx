@@ -7,12 +7,15 @@ import DeleteConfirm from '@/components/DeleteConfirm';
 import ActionMenu from '@/components/ActionMenu';
 import Spinner from '@/components/Spinner';
 import { ToastContainer, useToast } from '@/components/Toast';
+import Pagination, { paginate } from '@/components/Pagination';
 import axios from 'axios';
 
 const emptyForm: FinanceEntry = {
   date: new Date().toISOString().slice(0, 10),
   description: '', credit: 0, debit: 0, balance: 0,
 };
+
+const PER_PAGE = 10;
 
 const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-500';
 const labelCls = 'block text-sm font-medium text-gray-700 mb-1';
@@ -26,6 +29,7 @@ export default function FinancePage() {
   const [form, setForm]                 = useState<FinanceEntry>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<FinanceEntry | null>(null);
   const [saving, setSaving]             = useState(false);
+  const [page, setPage]                 = useState(1);
   const { toasts, remove, success, error } = useToast();
 
   const load = () => {
@@ -47,8 +51,8 @@ export default function FinancePage() {
   const save = async () => {
     setSaving(true);
     try {
-      if (editing?.id) {
-        await api.put(`/finance/${editing.id}`, form);
+      if (editing?._id) {
+        await api.put(`/finance/${editing._id}`, form);
         success('Entry updated successfully.');
       } else {
         await api.post('/finance', form);
@@ -62,9 +66,9 @@ export default function FinancePage() {
   };
 
   const doDelete = async () => {
-    if (!deleteTarget?.id) return;
+    if (!deleteTarget?._id) return;
     try {
-      await api.delete(`/finance/${deleteTarget.id}`);
+      await api.delete(`/finance/${deleteTarget._id}`);
       success('Entry deleted.'); setDeleteTarget(null); load();
     } catch { error('Failed to delete entry.'); }
   };
@@ -116,8 +120,8 @@ export default function FinancePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {records.map((r, i) => (
-                <tr key={r.id} className="hover:bg-green-50/40 transition-colors row-animate bg-white"
+              {paginate(records, page, PER_PAGE).map((r, i) => (
+                <tr key={r._id} className="hover:bg-green-50/40 transition-colors row-animate bg-white"
                   style={{ animationDelay: `${i * 30}ms` }}>
                   <td className="px-4 py-3 text-gray-600">{r.date}</td>
                   <td className="px-4 py-3 font-medium text-gray-900">{r.description}</td>
@@ -131,6 +135,9 @@ export default function FinancePage() {
               ))}
             </tbody>
           </table>
+          <div className="px-4 pb-4">
+            <Pagination total={records.length} page={page} perPage={PER_PAGE} onPage={setPage} />
+          </div>
         </div>
       )}
 
@@ -158,15 +165,15 @@ export default function FinancePage() {
             </div>
             <div>
               <label className={labelCls}>Credit — Income (₦)</label>
-              <input type="number" value={form.credit} onChange={e => set('credit', Number(e.target.value))} className={inputCls} min={0} />
+              <input type="number" value={form.credit || ''} onChange={e => set('credit', Number(e.target.value))} className={inputCls} min={0} placeholder="0" />
             </div>
             <div>
               <label className={labelCls}>Debit — Expense (₦)</label>
-              <input type="number" value={form.debit} onChange={e => set('debit', Number(e.target.value))} className={inputCls} min={0} />
+              <input type="number" value={form.debit || ''} onChange={e => set('debit', Number(e.target.value))} className={inputCls} min={0} placeholder="0" />
             </div>
             <div>
               <label className={labelCls}>Balance (₦)</label>
-              <input type="number" value={form.balance} onChange={e => set('balance', Number(e.target.value))} className={inputCls} min={0} />
+              <input type="number" value={form.balance || ''} onChange={e => set('balance', Number(e.target.value))} className={inputCls} min={0} placeholder="0" />
             </div>
           </div>
           <div className="flex gap-3 justify-end mt-6">
