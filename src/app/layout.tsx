@@ -21,15 +21,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={geist.variable}>
-      <body className="min-h-screen  bg-gray-50 font-sans antialiased">
+      <body className="h-screen overflow-hidden bg-gray-50 font-sans antialiased">
         <SplashScreen />
-        <div className="flex min-h-screen w-full overflow-hidden">
+        <div className="flex h-screen w-full overflow-hidden">
           <SidebarProvider>
             <Sidebar />
 
-            <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <TopBar />
-              <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+              <main className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
                 {children}
               </main>
             </div>

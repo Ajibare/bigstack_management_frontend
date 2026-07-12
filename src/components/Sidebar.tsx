@@ -50,11 +50,10 @@ export default function Sidebar() {
       )}
 
       <aside className={`
-        fixed top-0 left-0 z-30 h-full bg-slate-900 text-white flex flex-col
-        transition-transform duration-300 ease-in-out w-60
+        fixed top-0 left-0 z-30 flex h-full w-60 flex-col overflow-hidden bg-slate-900 text-white
+        transition-transform duration-300 ease-in-out
         ${open ? 'translate-x-0' : '-translate-x-full'}
-        lg:relative lg:z-auto lg:h-auto lg:min-h-screen lg:shrink-0
-        lg:translate-x-0
+        lg:relative lg:z-auto lg:h-screen lg:min-h-screen lg:shrink-0 lg:translate-x-0
         ${open ? 'lg:w-60' : 'lg:w-0 lg:overflow-hidden'}
       `}>
 
@@ -75,7 +74,7 @@ export default function Sidebar() {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-3 overflow-y-auto">
+        <nav className="flex-1 overflow-hidden py-3">
           {links.map(({ href, label, Icon }) => {
             const active = pathname === href;
             return (

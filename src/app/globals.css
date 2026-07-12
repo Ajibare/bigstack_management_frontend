@@ -13,6 +13,13 @@
 }
 
 /* Force white background always — no dark mode override */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 body {
   background: #ffffff;
   color: #171717;

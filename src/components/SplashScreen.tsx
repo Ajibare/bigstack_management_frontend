@@ -21,7 +21,7 @@ export default function SplashScreen() {
     const timer = window.setTimeout(() => {
       setIsVisible(false);
       window.sessionStorage.setItem('bigstack-splash-shown', 'true');
-    }, 1600);
+    }, 10000);
 
     return () => window.clearTimeout(timer);
   }, []);
