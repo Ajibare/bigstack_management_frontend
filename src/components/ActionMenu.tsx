@@ -79,10 +79,15 @@ export default function ActionMenu({ onView, onEdit, onDelete }: Props) {
       </button>
 
       {open && (
+        // <div
+        //   ref={menuRef}
+        //   className="fixed z-[9999] w-36 bg-white border border-gray-200 rounded-xl shadow-lg p-1"
+        //   style={{ top: position.top, left: position.left }}
+        // >
         <div
           ref={menuRef}
           className="fixed z-[9999] w-36 bg-white border border-gray-200 rounded-xl shadow-lg p-1"
-          style={{ top: position.top, left: position.left }}
+          style={{left: position.left }}
         >
           {onView  && item('View',   MdVisibility, onView)}
           {item('Edit',   MdEdit,       onEdit)}
