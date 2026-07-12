@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import api, { Student, Course } from '@/lib/api';
 import Modal from '@/components/Modal';
 import ViewModal from '@/components/ViewModal';
@@ -33,6 +33,9 @@ export default function StudentsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [saving, setSaving]         = useState(false);
   const [page, setPage]             = useState(1);
+  const [search, setSearch]         = useState('');
+  const [fromDate, setFromDate]     = useState('');
+  const [toDate, setToDate]         = useState('');
   const { toasts, remove, success, error } = useToast();
 
   const load = () => {
@@ -88,6 +91,18 @@ export default function StudentsPage() {
 
   const set = (k: keyof FormData, v: string | number | boolean) => setForm(f => ({ ...f, [k]: v }));
 
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return records.filter((r) => {
+      const matchesText = !term || [r.name, r.course, r.tutor, r.sn].some((value) => value?.toString().toLowerCase().includes(term));
+      const recordDate = new Date(r.date);
+      const from = fromDate ? new Date(fromDate) : null;
+      const to = toDate ? new Date(toDate) : null;
+      const matchesDate = (!from || recordDate >= from) && (!to || recordDate <= to);
+      return matchesText && matchesDate;
+    });
+  }, [records, search, fromDate, toDate]);
+
   return (
     <div className="bg-white min-h-full">
       <ToastContainer toasts={toasts} remove={remove} />
@@ -104,9 +119,24 @@ export default function StudentsPage() {
         </button>
       </div>
 
+      <div className="flex flex-col gap-3 md:flex-row md:items-end mb-4">
+        <div className="flex-1">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Search</label>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name, course, tutor or ID" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">From</label>
+          <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">To</label>
+          <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+      </div>
+
       {/* Table */}
-      {loading ? <Spinner /> : records.length === 0 ? (
-        <div className="text-center py-24 text-gray-400">No records yet. Add the first student.</div>
+      {loading ? <Spinner /> : filtered.length === 0 ? (
+        <div className="text-center py-24 text-gray-400">{records.length === 0 ? 'No records yet. Add the first student.' : 'No records match your search or date filter.'}</div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm bg-white">
           <table className="w-full text-sm">
@@ -118,7 +148,7 @@ export default function StudentsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {paginate(records, page, PER_PAGE).map((r, i) => (
+              {paginate(filtered, page, PER_PAGE).map((r, i) => (
                 <tr key={r._id} className="hover:bg-blue-50/40 transition-colors row-animate bg-white"
                   style={{ animationDelay: `${i * 30}ms` }}>
                   <td className="px-4 py-3">
@@ -158,7 +188,7 @@ export default function StudentsPage() {
             </tbody>
           </table>
           <div className="px-4 pb-4">
-            <Pagination total={records.length} page={page} perPage={PER_PAGE} onPage={setPage} />
+            <Pagination total={filtered.length} page={page} perPage={PER_PAGE} onPage={setPage} />
           </div>
         </div>
       )}

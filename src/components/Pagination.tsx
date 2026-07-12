@@ -29,9 +29,9 @@ export default function Pagination({ total, page, perPage, onPage }: Props) {
     pages.push(totalPages);
   }
 
-  const btn = (label: React.ReactNode, target: number, disabled: boolean, active = false) => (
+  const btn = (label: React.ReactNode, target: number, disabled: boolean, active = false, keyName?: string) => (
     <button
-      key={String(label) + target}
+      key={keyName ?? `page-btn-${target}`}
       onClick={() => !disabled && onPage(target)}
       disabled={disabled}
       className={`
@@ -56,17 +56,17 @@ export default function Pagination({ total, page, perPage, onPage }: Props) {
       </p>
 
       <div className="flex items-center gap-1">
-        {btn(<MdFirstPage size={16} />, 1,           page === 1)}
-        {btn(<MdChevronLeft size={16} />, page - 1,  page === 1)}
+        {btn(<MdFirstPage size={16} />, 1, page === 1, false, 'page-first')}
+        {btn(<MdChevronLeft size={16} />, page - 1, page === 1, false, 'page-prev')}
 
         {pages.map((p, idx) =>
           p === '...'
             ? <span key={`ellipsis-${idx}`} className="px-1 text-gray-400 text-sm select-none">…</span>
-            : btn(p, p, false, p === page)
+            : btn(p, p, false, p === page, `page-${p}`)
         )}
 
-        {btn(<MdChevronRight size={16} />, page + 1, page === totalPages)}
-        {btn(<MdLastPage size={16} />,    totalPages, page === totalPages)}
+        {btn(<MdChevronRight size={16} />, page + 1, page === totalPages, false, 'page-next')}
+        {btn(<MdLastPage size={16} />, totalPages, page === totalPages, false, 'page-last')}
       </div>
     </div>
   );

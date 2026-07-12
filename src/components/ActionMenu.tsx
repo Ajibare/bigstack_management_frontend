@@ -12,26 +12,40 @@ export default function ActionMenu({ onView, onEdit, onDelete }: Props) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const toggleMenu = (e: React.MouseEvent) => {
+  const toggleMenu = () => {
     if (!open && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      const menuWidth = 144; // w-36 = 144px
-      const windowWidth = window.innerWidth;
+      const MENU_WIDTH = 176; // w-44 in pixels
+      const MENU_HEIGHT = 140; // Approximate menu height
+      const GAP = 8;
       
-      // Calculate position to show menu to the right of button
-      let left = rect.right + 4;
+      // Check if there's space to the right
+      const spaceOnRight = window.innerWidth - rect.right;
+      const canFitRight = spaceOnRight >= MENU_WIDTH + GAP;
       
-      // If menu would go off screen, show to the left instead
-      if (left + menuWidth > windowWidth) {
-        left = rect.left - menuWidth - 4;
+      // Calculate left position
+      let left = canFitRight ? rect.right + GAP : rect.left - MENU_WIDTH - GAP;
+      
+      // Keep menu within viewport horizontally
+      if (left < 0) left = GAP;
+      if (left + MENU_WIDTH > window.innerWidth) left = window.innerWidth - MENU_WIDTH - GAP;
+      
+      // Position menu directly beside button, aligned to button top
+      let top = rect.top;
+      
+      // Adjust if menu goes below viewport
+      if (top + MENU_HEIGHT > window.innerHeight) {
+        top = window.innerHeight - MENU_HEIGHT - GAP;
       }
       
-      setPosition({
-        top: rect.top,
-        left: left,
-      });
+      // Adjust if menu goes above viewport
+      if (top < 0) {
+        top = GAP;
+      }
+      
+      setPosition({ top, left });
     }
     setOpen(!open);
   };
@@ -39,8 +53,7 @@ export default function ActionMenu({ onView, onEdit, onDelete }: Props) {
   // Close when clicking outside
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node) && 
-          buttonRef.current && !buttonRef.current.contains(e.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
@@ -56,19 +69,19 @@ export default function ActionMenu({ onView, onEdit, onDelete }: Props) {
   ) => (
     <button
       onClick={() => { onClick(); setOpen(false); }}
-      className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors text-left ${
+      className={`w-full flex items-center gap-3 px-4 py-3 text-sm rounded-lg transition-colors text-left font-medium ${
         danger
-          ? 'text-red-600 hover:bg-red-50'
-          : 'text-gray-700 hover:bg-gray-100'
+          ? 'text-red-400 hover:bg-red-600/20'
+          : 'text-white hover:bg-slate-700'
       }`}
     >
-      <Icon size={15} className="shrink-0" />
+      <Icon size={18} className="shrink-0" />
       {label}
     </button>
   );
 
   return (
-    <div className="relative inline-block">
+    <div ref={containerRef} className="relative inline-block">
       <button
         ref={buttonRef}
         onClick={toggleMenu}
@@ -79,19 +92,13 @@ export default function ActionMenu({ onView, onEdit, onDelete }: Props) {
       </button>
 
       {open && (
-        // <div
-        //   ref={menuRef}
-        //   className="fixed z-[9999] w-36 bg-white border border-gray-200 rounded-xl shadow-lg p-1"
-        //   style={{ top: position.top, left: position.left }}
-        // >
-        <div
-          ref={menuRef}
-          className="fixed z-[9999] w-36 bg-white border border-gray-200 rounded-xl shadow-lg p-1"
-          style={{left: position.left }}
-        >
-          {onView  && item('View',   MdVisibility, onView)}
-          {item('Edit',   MdEdit,       onEdit)}
-          {item('Delete', MdDelete,     onDelete, true)}
+        // <div className="fixed z-[9999] w-44 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden" style={{left: `${position.left}px` }}>
+        <div className="fixed z-[9999] w-44 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden">
+          <div className="flex flex-col p-2">
+            {onView && item('View', MdVisibility, onView)}
+            {item('Edit', MdEdit, onEdit)}
+            {item('Delete', MdDelete, onDelete, true)}
+          </div>
         </div>
       )}
     </div>
