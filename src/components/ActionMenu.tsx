@@ -92,8 +92,8 @@ export default function ActionMenu({ onView, onEdit, onDelete }: Props) {
       </button>
 
       {open && (
-        // <div className="fixed z-[9999] w-44 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden" style={{left: `${position.left}px` }}>
-        <div className="fixed z-[9999] w-44 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden">
+        <div className="fixed z-[9999] w-44 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden" style={{left: `${position.left}px` }}>
+        {/* // <div className="fixed z-[9999] w-44 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden"> */}
           <div className="flex flex-col p-2">
             {onView && item('View', MdVisibility, onView)}
             {item('Edit', MdEdit, onEdit)}
