@@ -11,8 +11,10 @@ import Pagination, { paginate } from '@/components/Pagination';
 import axios from 'axios';
 
 const emptyForm = {
-  name: '', amountPaid: 0, duration: '',
+  name: '', email: '', amountPaid: 0, duration: '',
+  isMonthly: false, months: 1,
   date: new Date().toISOString().slice(0, 10),
+  expiresAt: new Date().toISOString().slice(0, 10),
 };
 type FormData = typeof emptyForm;
 
@@ -46,11 +48,28 @@ export default function HubSubscriptionsPage() {
   useEffect(load, []);
 
   const openAdd  = () => { setEditing(null); setForm(emptyForm); setShowForm(true); };
+  const computeExpiry = (date: string, months: number) => {
+    const d = new Date(date);
+    d.setMonth(d.getMonth() + months);
+    return d.toISOString().slice(0, 10);
+  };
+
   const openEdit = (r: HubSubscription) => {
     setEditing(r);
-    setForm({ name: r.name, amountPaid: r.amountPaid, duration: r.duration, date: r.date });
+    setForm({
+      name: r.name,
+      email: r.email ?? '',
+      amountPaid: r.amountPaid,
+      duration: r.duration,
+      isMonthly: r.isMonthly ?? false,
+      months: r.months ?? 1,
+      date: r.date,
+      expiresAt: r.expiresAt ?? (r.isMonthly ? computeExpiry(r.date, r.months ?? 1) : r.date),
+    });
     setShowForm(true);
   };
+
+  const [invoiceSending, setInvoiceSending] = useState(false);
 
   const save = async () => {
     setSaving(true);
@@ -69,6 +88,19 @@ export default function HubSubscriptionsPage() {
     } finally { setSaving(false); }
   };
 
+  const sendInvoice = async (id: string) => {
+    setInvoiceSending(true);
+    try {
+      await api.post(`/hub-subscriptions/${id}/invoice`);
+      success('Invoice email triggered successfully.');
+    } catch (err) {
+      const msg = axios.isAxiosError(err) ? (err.response?.data?.message ?? err.message) : 'Unexpected error.';
+      error(Array.isArray(msg) ? msg.join(', ') : msg);
+    } finally {
+      setInvoiceSending(false);
+    }
+  };
+
   const doDelete = async () => {
     if (!deleteTarget?._id) return;
     try {
@@ -77,7 +109,17 @@ export default function HubSubscriptionsPage() {
     } catch { error('Failed to delete.'); }
   };
 
-  const set = (k: keyof FormData, v: string | number) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k: keyof FormData, v: string | number | boolean) => setForm(f => {
+    const nextForm = { ...f, [k]: v };
+
+    if (k === 'date' || k === 'months' || k === 'isMonthly') {
+      if (nextForm.isMonthly && nextForm.months > 0) {
+        nextForm.expiresAt = computeExpiry(nextForm.date, Number(nextForm.months));
+      }
+    }
+
+    return nextForm;
+  });
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -127,7 +169,7 @@ export default function HubSubscriptionsPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
               <tr>
-                {['User ID','Name','Amount Paid','Duration','Date',''].map(h => (
+                {['User ID','Name','Email','Amount Paid','Duration','Expires','Actions'].map(h => (
                   <th key={h} className="px-4 py-3 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -140,11 +182,17 @@ export default function HubSubscriptionsPage() {
                     <span className="bg-teal-100 text-teal-700 text-xs font-semibold px-2 py-0.5 rounded">{r.sn}</span>
                   </td>
                   <td className="px-4 py-3 font-medium text-gray-900">{r.name}</td>
+                  <td className="px-4 py-3 text-gray-600">{r.email}</td>
                   <td className="px-4 py-3 text-green-700">₦{r.amountPaid.toLocaleString()}</td>
                   <td className="px-4 py-3 text-gray-600">{r.duration}</td>
-                  <td className="px-4 py-3 text-gray-600">{r.date}</td>
+                  <td className="px-4 py-3 text-gray-600">{r.expiresAt}</td>
                   <td className="px-4 py-3">
-                    <ActionMenu onView={() => setViewing(r)} onEdit={() => openEdit(r)} onDelete={() => setDeleteTarget(r)} />
+                    <ActionMenu
+                      onView={() => setViewing(r)}
+                      onEdit={() => openEdit(r)}
+                      onDelete={() => setDeleteTarget(r)}
+                      onInvoice={r.isMonthly ? (() => r._id && sendInvoice(r._id)) : undefined}
+                    />
                   </td>
                 </tr>
               ))}
@@ -160,9 +208,13 @@ export default function HubSubscriptionsPage() {
         <ViewModal title="Subscription Details" onClose={() => setViewing(null)} fields={[
           { label: 'User ID',     value: viewing.sn },
           { label: 'Name',        value: viewing.name },
+          { label: 'Email',       value: viewing.email },
           { label: 'Amount Paid', value: `₦${viewing.amountPaid.toLocaleString()}` },
           { label: 'Duration',    value: viewing.duration },
+          { label: 'Monthly',     value: viewing.isMonthly ? 'Yes' : 'No' },
+          { label: 'Months',      value: viewing.months?.toString() ?? '1' },
           { label: 'Date',        value: viewing.date },
+          { label: 'Expires',     value: viewing.expiresAt },
         ]} />
       )}
 
@@ -174,6 +226,11 @@ export default function HubSubscriptionsPage() {
               <input type="text" value={form.name} onChange={e => set('name', e.target.value)}
                 className={inputCls} placeholder="Enter full name" />
             </div>
+            <div className="col-span-2">
+              <label className={labelCls}>Subscriber Email</label>
+              <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
+                className={inputCls} placeholder="name@example.com" />
+            </div>
             <div>
               <label className={labelCls}>Amount Paid (₦)</label>
               <input type="number" value={form.amountPaid || ''} onChange={e => set('amountPaid', Number(e.target.value))}
@@ -184,9 +241,24 @@ export default function HubSubscriptionsPage() {
               <input type="text" value={form.duration} onChange={e => set('duration', e.target.value)}
                 className={inputCls} placeholder="e.g. 1 month" />
             </div>
+            <div className="flex items-center gap-3">
+              <input id="monthly" type="checkbox" checked={form.isMonthly} onChange={e => set('isMonthly', e.target.checked)} className="h-4 w-4 text-teal-600 border-gray-300 rounded" />
+              <label htmlFor="monthly" className="text-sm font-medium text-gray-700">Monthly subscription</label>
+            </div>
             <div>
-              <label className={labelCls}>Date</label>
+              <label className={labelCls}>Start Date</label>
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className={inputCls} />
+            </div>
+            {form.isMonthly && (
+              <div>
+                <label className={labelCls}>Months</label>
+                <input type="number" value={form.months || ''} onChange={e => set('months', Number(e.target.value))}
+                  className={inputCls} min={1} placeholder="Months" />
+              </div>
+            )}
+            <div>
+              <label className={labelCls}>Expiry Date</label>
+              <input type="date" value={form.expiresAt} onChange={e => set('expiresAt', e.target.value)} className={inputCls} />
             </div>
           </div>
           <div className="flex gap-3 justify-end mt-6">

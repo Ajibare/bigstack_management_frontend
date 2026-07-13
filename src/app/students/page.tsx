@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import Select from 'react-select';
 import api, { Student, Course } from '@/lib/api';
 import Modal from '@/components/Modal';
 import ViewModal from '@/components/ViewModal';
@@ -90,6 +91,18 @@ export default function StudentsPage() {
   };
 
   const set = (k: keyof FormData, v: string | number | boolean) => setForm(f => ({ ...f, [k]: v }));
+
+  const setCourse = (courseName: string) => {
+    const selected = courses.find(c => c.name === courseName);
+    setForm(f => ({
+      ...f,
+      course: courseName,
+      feeToPay: selected?.price ?? f.feeToPay,
+      duration: selected?.duration ?? f.duration,
+    }));
+  };
+
+  const courseOptions = courses.map((c) => ({ value: c.name, label: c.name, course: c }));
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -221,13 +234,19 @@ export default function StudentsPage() {
             </div>
             <div className="col-span-2">
               <label className={labelCls}>Course</label>
-              {courses.length === 0
-                ? <p className="text-xs text-red-500 mt-1">No courses found. Add courses first.</p>
-                : <select value={form.course} onChange={e => set('course', e.target.value)} className={inputCls}>
-                    <option value="">— Select a course —</option>
-                    {courses.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
-                  </select>
-              }
+              {courses.length === 0 ? (
+                <p className="text-xs text-red-500 mt-1">No courses found. Add courses first.</p>
+              ) : (
+                <Select
+                  options={courseOptions}
+                  value={courseOptions.find((option) => option.value === form.course) ?? null}
+                  onChange={(option) => setCourse(option ? option.value : '')}
+                  isClearable
+                  placeholder="Select or search course"
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                />
+              )}
             </div>
             <div>
               <label className={labelCls}>Tutor</label>
@@ -258,28 +277,32 @@ export default function StudentsPage() {
               <label className={labelCls}>Date</label>
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className={inputCls} />
             </div>
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={form.completed}
-                  onChange={(e) => set('completed', e.target.checked)}
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                />
-                Course Completed
-              </label>
-            </div>
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={form.certificateIssued}
-                  onChange={(e) => set('certificateIssued', e.target.checked)}
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                />
-                Certificate Issued
-              </label>
-            </div>
+            {editing && (
+              <>
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={form.completed}
+                      onChange={(e) => set('completed', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    Course Completed
+                  </label>
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={form.certificateIssued}
+                      onChange={(e) => set('certificateIssued', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    Certificate Issued
+                  </label>
+                </div>
+              </>
+            )}
           </div>
           <div className="flex gap-3 justify-end mt-6">
             <button onClick={() => setShowForm(false)}
