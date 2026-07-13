@@ -8,6 +8,7 @@ import ActionMenu from '@/components/ActionMenu';
 import Spinner from '@/components/Spinner';
 import { ToastContainer, useToast } from '@/components/Toast';
 import Pagination, { paginate } from '@/components/Pagination';
+import { formatCurrency, parseCurrencyInput } from '@/lib/format';
 import axios from 'axios';
 
 const empty: Course = { name: '', description: '', price: 0, duration: '' };
@@ -88,7 +89,7 @@ export default function CoursesPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
               <tr>
-                {['#','Course Name','Description','Price','Duration',''].map(h => (
+                {['#','Course Name','Price','Duration',''].map(h => (
                   <th key={h} className="px-4 py-3 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -99,7 +100,6 @@ export default function CoursesPage() {
                   style={{ animationDelay: `${i * 30}ms` }}>
                   <td className="px-4 py-3 text-gray-400">{i + 1}</td>
                   <td className="px-4 py-3 font-medium text-gray-900">{r.name}</td>
-                  <td className="px-4 py-3 text-gray-600">{r.description || '—'}</td>
                   <td className="px-4 py-3 text-green-700 font-medium">{r.price ? `₦${Number(r.price).toLocaleString()}` : '—'}</td>
                   <td className="px-4 py-3 text-gray-600">{r.duration || '—'}</td>
                   <td className="px-4 py-3">
@@ -139,8 +139,15 @@ export default function CoursesPage() {
             </div>
             <div>
               <label className={labelCls}>Course Price (₦)</label>
-              <input type="number" value={form.price || ''} onChange={e => setForm({ ...form, price: Number(e.target.value) })}
-                className={inputCls} min={0} placeholder="0" />
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9,]*"
+                value={formatCurrency(form.price)}
+                onChange={e => setForm({ ...form, price: parseCurrencyInput(e.target.value) })}
+                className={inputCls}
+                placeholder="35,000"
+              />
             </div>
             <div>
               <label className={labelCls}>Duration</label>
