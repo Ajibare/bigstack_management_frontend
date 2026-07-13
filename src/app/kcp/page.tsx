@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import api, { KcpEntry } from '@/lib/api';
+import { formatCurrency, parseCurrencyInput } from '@/lib/format';
 import Modal from '@/components/Modal';
 import ViewModal from '@/components/ViewModal';
 import DeleteConfirm from '@/components/DeleteConfirm';
@@ -232,15 +233,42 @@ export default function KcpPage() {
             </div>
             <div>
               <label className={labelCls}>Fee Payment (₦)</label>
-              <input type="number" value={form.feeToPay || ''} onChange={e => set('feeToPay', Number(e.target.value))} className={inputCls} min={0} placeholder="0" />
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9,]*"
+                value={formatCurrency(form.feeToPay)}
+                onChange={e => set('feeToPay', parseCurrencyInput(e.target.value))}
+                className={inputCls}
+                min={0}
+                placeholder="0"
+              />
             </div>
             <div>
               <label className={labelCls}>Amount Paid (₦)</label>
-              <input type="number" value={form.amountPaid || ''} onChange={e => set('amountPaid', Number(e.target.value))} className={inputCls} min={0} placeholder="0" />
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9,]*"
+                value={formatCurrency(form.amountPaid)}
+                onChange={e => set('amountPaid', parseCurrencyInput(e.target.value))}
+                className={inputCls}
+                min={0}
+                placeholder="0"
+              />
             </div>
             <div className="col-span-2">
               <label className={labelCls}>Balance (₦)</label>
-              <input type="number" value={form.balance || ''} onChange={e => set('balance', Number(e.target.value))} className={inputCls} min={0} placeholder="0" />
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9,]*"
+                value={formatCurrency(form.balance)}
+                onChange={e => set('balance', parseCurrencyInput(e.target.value))}
+                className={inputCls}
+                min={0}
+                placeholder="0"
+              />
             </div>
             {editing && (
               <>

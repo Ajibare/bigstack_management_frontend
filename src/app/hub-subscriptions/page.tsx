@@ -8,6 +8,7 @@ import ActionMenu from '@/components/ActionMenu';
 import Spinner from '@/components/Spinner';
 import { ToastContainer, useToast } from '@/components/Toast';
 import Pagination, { paginate } from '@/components/Pagination';
+import { formatCurrency, parseCurrencyInput } from '@/lib/format';
 import axios from 'axios';
 
 const emptyForm = {
@@ -233,8 +234,15 @@ export default function HubSubscriptionsPage() {
             </div>
             <div>
               <label className={labelCls}>Amount Paid (₦)</label>
-              <input type="number" value={form.amountPaid || ''} onChange={e => set('amountPaid', Number(e.target.value))}
-                className={inputCls} min={0} placeholder="0" />
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9,]*"
+                value={formatCurrency(form.amountPaid)}
+                onChange={e => set('amountPaid', parseCurrencyInput(e.target.value))}
+                className={inputCls}
+                placeholder="0"
+              />
             </div>
             <div>
               <label className={labelCls}>Duration</label>
