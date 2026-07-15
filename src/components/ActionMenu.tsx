@@ -222,7 +222,7 @@ export default function ActionMenu({ onView, onEdit, onDelete, onInvoice }: Prop
           <div className="flex flex-col p-2">
             {onView && item('View', MdVisibility, onView)}
             {item('Edit', MdEdit, onEdit)}
-            {onInvoice && item('Send Invoice', MdReceiptLong, onInvoice)}
+            {onInvoice && item('Send Receipt', MdReceiptLong, onInvoice)}
             {item('Delete', MdDelete, onDelete, true)}
           </div>
         </div>,
