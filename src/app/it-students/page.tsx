@@ -265,32 +265,28 @@ export default function ItStudentsPage() {
                 placeholder="0"
               />
             </div>
-            {editing && (
-              <>
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={form.completed}
-                      onChange={(e) => set('completed', e.target.checked)}
-                      className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                    />
-                    Course Completed
-                  </label>
-                </div>
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={form.certificateIssued}
-                      onChange={(e) => set('certificateIssued', e.target.checked)}
-                      className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                    />
-                    Certificate Issued
-                  </label>
-                </div>
-              </>
-            )}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={form.completed}
+                  onChange={(e) => set('completed', e.target.checked)}
+                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                />
+                Course Completed
+              </label>
+            </div>
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={form.certificateIssued}
+                  onChange={(e) => set('certificateIssued', e.target.checked)}
+                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                />
+                Certificate Issued
+              </label>
+            </div>
           </div>
           <div className="flex gap-3 justify-end mt-6">
             <button onClick={() => setShowForm(false)}
